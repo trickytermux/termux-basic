@@ -118,7 +118,7 @@ Start the tool:
 
 ## License 📄
 
-MIT License - See [LICENSE](LICENSE) for full text
+MIT License - See [LICENSE](LICENSE.md) for full text
 
 ## Support ❤️
 
