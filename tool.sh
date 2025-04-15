@@ -47,6 +47,12 @@ check_dependencies() {
         echo -e "${RED}nmap not found! Installing...${NC}"
         pkg install nmap -y
     fi
+
+    # Install jq if missing
+    if ! command -v nmap &> /dev/null; then
+        echo -e "${RED}jq not found! Installing...${NC}"
+        pkg install jq -y
+    fi
     
     # Install termux-api package if missing
     if ! command -v termux-telephony-deviceinfo &> /dev/null; then
@@ -68,18 +74,73 @@ check_dependencies() {
     fi
 }
 
-# System information
+# System information (updated)
 system_info() {
     clear
     echo -e "${YELLOW}=== System Information ===${NC}"
+    
+    # Get actual user storage (external if available)
+    storage_path="$HOME"
+    if [ -d "/storage/emulated/0" ]; then
+        storage_path="/storage/emulated/0"
+    fi
+
     echo -e "${BLUE}Kernel:${NC} $(uname -r)"
     echo -e "${BLUE}Device:${NC} $(getprop ro.product.model)"
     echo -e "${BLUE}Android:${NC} $(getprop ro.build.version.release)"
     echo -e "${BLUE}Uptime:${NC} $(uptime | awk '{print $3}' | sed 's/,//')"
-    echo -e "${BLUE}Storage:${NC}"
-    df -h / | awk 'NR==2 {print $3 " used / " $2 " total"}'
-    echo -e "${BLUE}RAM:${NC}"
-    free -m | awk 'NR==2 {print $3 "MB used / " $2 "MB total"}'
+    
+    # Storage with accurate calculation
+    echo -e "${BLUE}Internal Storage:${NC}"
+    df -h $storage_path | awk 'NR==2 {print $3 " used / " $2 " total (" $5 " used)"}'
+    
+    # RAM calculation
+    echo -e "${BLUE}RAM Usage:${NC}"
+    free -m | awk 'NR==2 {printf "%.2fGB used / %.2fGB total\n", $3/1024, $2/1024}'
+
+    echo -e "\nPress enter to return..."
+    read
+    main_menu
+}
+
+# Phone information (updated)
+phone_info() {
+    clear
+    echo -e "${YELLOW}=== Phone Information ===${NC}"
+    
+    if ! termux-battery-status &> /dev/null; then
+        echo -e "${RED}Termux-API not configured!${NC}"
+        echo -e "Install steps:"
+        echo -e "1. Install Termux-API app from F-Droid"
+        echo -e "2. Run: pkg install termux-api"
+        echo -e "3. Restart Termux"
+        echo -e "\nPress enter to return..."
+        read
+        main_menu
+    fi
+
+    # Battery status with error handling
+    echo -e "${BLUE}Battery Status:${NC}"
+    battery=$(termux-battery-status)
+    
+    if echo "$battery" | grep -q "OVER_VOLTAGE"; then
+        echo -e "${RED}Error: Invalid battery data received${NC}"
+        echo -e "Try these fixes:"
+        echo -e "1. Reinstall Termux-API app"
+        echo -e "2. Grant battery permissions"
+        echo -e "3. Update Termux packages"
+    else
+        echo "$battery" | jq -r '
+            "Health: \(.health) | Status: \(.status)\n" +
+            "Percentage: \(.percentage)% | Temperature: \(.temperature)°C\n" +
+            "Current: \(.current) mA | Voltage: \(.voltage) mV"
+        ' 2>/dev/null || echo "$battery"
+    fi
+
+    # Device info
+    echo -e "\n${BLUE}Device Info:${NC}"
+    termux-telephony-deviceinfo | jq '.' 2>/dev/null || termux-telephony-deviceinfo
+
     echo -e "\nPress enter to return..."
     read
     main_menu
