@@ -158,34 +158,6 @@ network_scanner() {
     main_menu
 }
 
-# Phone information
-phone_info() {
-    clear
-    echo -e "${YELLOW}=== Phone Information ===${NC}"
-    
-    # Final verification before showing info
-    if ! termux-battery-status &> /dev/null; then
-        echo -e "${RED}Termux-API app not detected!${NC}"
-        echo -e "Install from:"
-        echo -e "1. F-Droid: ${BLUE}https://f-droid.org/en/packages/com.termux.api/${NC}"
-        echo -e "2. GitHub:  ${BLUE}https://github.com/termux/termux-api/releases${NC}"
-        echo -e "\nAfter installation, restart Termux session"
-        echo -e "\nPress enter to return..."
-        read
-        main_menu
-    fi
-    
-    echo -e "${BLUE}Battery:${NC}"
-    termux-battery-status | jq . 2>/dev/null || termux-battery-status
-    echo -e "\n${BLUE}Device Info:${NC}"
-    termux-telephony-deviceinfo | jq . 2>/dev/null || termux-telephony-deviceinfo
-    echo -e "\n${BLUE}WiFi Connection:${NC}"
-    termux-wifi-connectioninfo | jq . 2>/dev/null || termux-wifi-connectioninfo
-    echo -e "\nPress enter to return..."
-    read
-    main_menu
-}
-
 # Quick update
 quick_update() {
     clear
